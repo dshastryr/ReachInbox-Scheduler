@@ -193,9 +193,17 @@ export async function processEmailJob(
   try {
     await notify(emailJob.userId, `Email sent successfully to ${emailJob.recipientEmail}`);
   } catch (error) {
-    const errorName = error instanceof Error ? error.name : "Error";
-    console.error(`[email-worker] Slack notification failed for ${emailJobId} (${errorName})`);
+  const errorName = error instanceof Error ? error.name : "Error";
+  const errorMessage = error instanceof Error ? error.message : String(error);
+
+  console.error(
+    `[email-worker] Slack notification failed for ${emailJobId} (${errorName}): ${errorMessage}`,
+  );
+
+  if (error instanceof Error && error.stack) {
+    console.error(error.stack);
   }
+}
 
   return { sent: true, previewUrl: delivery.previewUrl };
 }

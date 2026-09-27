@@ -178,11 +178,17 @@ export async function postSlackMessage(
   } catch {
     throw new Error("Slack notification could not connect");
   }
-  let payload: { ok?: boolean };
-  try {
-    payload = (await response.json()) as { ok?: boolean };
-  } catch {
-    throw new Error("Slack notification returned an invalid response");
-  }
-  if (!response.ok || payload.ok !== true) throw new Error("Slack notification failed");
+  let payload: { ok?: boolean; error?: string };
+
+try {
+  payload = (await response.json()) as { ok?: boolean; error?: string };
+} catch {
+  throw new Error("Slack notification returned an invalid response");
+}
+
+if (!response.ok || payload.ok !== true) {
+  throw new Error(
+    `Slack notification failed: ${payload.error ?? `HTTP ${response.status}`}`,
+  );
+}
 }

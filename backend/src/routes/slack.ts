@@ -52,9 +52,13 @@ router.get("/connect", async (_req, res) => {
     const state = await createSlackOAuthState(res.locals.userId as string);
     const authorizationUrl = await buildSlackAuthorizationUrl(state);
     res.redirect(302, authorizationUrl);
-  } catch {
-    res.status(503).json({ error: "Slack OAuth is unavailable or not configured" });
-  }
+  } catch (error) {
+  console.error("Slack OAuth connect error:", error);
+
+  res.status(503).json({
+    error: error instanceof Error ? error.message : "Unknown Slack OAuth error",
+  });
+}
 });
 
 router.get("/callback", async (req, res) => {
