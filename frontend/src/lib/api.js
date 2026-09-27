@@ -1,8 +1,7 @@
 const DEFAULT_API_BASE_URL = "https://reachinbox-scheduler-03lq.onrender.com";
 
 export function getApiBaseUrl() {
-  const configured = import.meta.env.VITE_API_URL;
-  return (typeof configured === "string" && configured.trim() ? configured : DEFAULT_API_BASE_URL).replace(/\/$/, "");
+  return DEFAULT_API_BASE_URL;
 }
 
 export class ApiError extends Error {
