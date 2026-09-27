@@ -36,4 +36,25 @@ app.get("/health", async (_req, res) => {
   }
 });
 
+app.get("/debug/redis", (_req, res) => {
+  const value = process.env.REDIS_URL;
+
+  if (!value) {
+    return res.status(500).json({ redisUrl: "MISSING" });
+  }
+
+  try {
+    const url = new URL(value);
+
+    return res.json({
+      protocol: url.protocol,
+      hostname: url.hostname,
+      port: url.port || "default",
+      database: url.pathname || "/",
+    });
+  } catch {
+    return res.status(500).json({ redisUrl: "INVALID" });
+  }
+});
+
 export default app;
