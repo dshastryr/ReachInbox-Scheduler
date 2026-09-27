@@ -1,0 +1,14 @@
+
+> reachinbox-backend@1.0.0 elasticsearch:test
+> tsx src/scripts/test-elasticsearch.ts
+
+IMPORTANT! Eviction policy is allkeys-lru. It should be "noeviction"
+PASS TEST 1: Elasticsearch is reachable
+PASS TEST 2: email-jobs index exists or was initialized without deleting existing data
+PASS TESTS 3-4: SENT EmailJob indexed twice under its UUID as one document
+PASS TEST 5: subject and recipient full-text searches return the indexed document
+PASS TEST 6: cross-user search is scoped out; client userId is ignored and auth is required
+IMPORTANT! Eviction policy is allkeys-lru. It should be "noeviction"
+IMPORTANT! Eviction policy is allkeys-lru. It should be "noeviction"
+IMPORTANT! Eviction policy is allkeys-lru. It should be "noeviction"
+Elasticsearch test failed (Error)

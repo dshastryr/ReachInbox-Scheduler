@@ -1,0 +1,50 @@
+{
+  "name": "reachinbox-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "worker": "tsx src/workers/worker.ts",
+    "queue:test": "tsx src/scripts/schedule-test-job.ts",
+    "email:test": "tsx src/scripts/create-test-email-job.ts",
+    "campaign-scheduler:test": "tsx src/scripts/test-campaign-scheduler.ts",
+    "rate-limit:test": "tsx src/scripts/test-email-rate-limiter.ts",
+    "delay:test": "tsx src/scripts/test-email-send-delay.ts",
+    "test:idempotency": "tsx src/scripts/test-idempotency.ts",
+    "elasticsearch:init": "tsx src/scripts/init-elasticsearch.ts",
+    "elasticsearch:test": "tsx src/scripts/test-elasticsearch.ts",
+    "slack:test": "tsx src/scripts/test-slack.ts",
+    "google:test": "tsx src/scripts/test-google-auth.ts",
+    "queue-dashboard:test": "tsx src/scripts/test-queue-dashboard.ts",
+    "auth-scheduling:test": "tsx src/scripts/test-auth-scheduling.ts"
+  },
+  "dependencies": {
+    "@bull-board/api": "^9.10.1",
+    "@bull-board/express": "^9.10.1",
+    "@elastic/elasticsearch": "^8.19.2",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "bullmq": "^6.3.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "ioredis": "^6.0.0",
+    "nodemailer": "^10.0.10",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "@types/nodemailer": "^8.0.2",
+    "prisma": "^7.10.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  },
+  "allowScripts": {
+    "prisma@7.10.0": true,
+    "@prisma/engines@7.10.0": true
+  }
+}
