@@ -82,6 +82,20 @@ test("integration status shows Slack and Google without tokens", () => {
   assert.doesNotMatch(html, /xoxb|accessToken/);
 });
 
+test("settings provides a real SMTP sender form and never renders saved passwords", () => {
+  const html = renderDashboard({
+    user,
+    page: "settings",
+    senders: [{ id: "sender-1", name: "Ethereal Test", email: "sender@ethereal.email", smtpHost: "smtp.ethereal.email", smtpPort: 587, smtpPassword: "must-not-render" }],
+  });
+  assert.match(html, /Add an SMTP sender/);
+  assert.match(html, /name="smtpPassword" type="password"/);
+  assert.match(html, /smtp\.ethereal\.email/);
+  assert.match(html, /Ethereal Test/);
+  assert.match(html, /sender@ethereal\.email/);
+  assert.doesNotMatch(html, /must-not-render/);
+});
+
 test("CSV/TXT parser normalizes, deduplicates, and counts malformed addresses", () => {
   const parsed = parseRecipients("email,name\nALICE@example.test,Alice\nalice@example.test,Duplicate\nbad@@example.test,Bad\nbob@example.test,Bob");
   assert.deepEqual(parsed.recipients, ["alice@example.test", "bob@example.test"]);
@@ -151,6 +165,20 @@ test("sent history API uses its centralized endpoint with cookie credentials", a
   assert.match(captured.url, /\/api\/emails\/sent$/);
   assert.equal(captured.options.credentials, "include");
   assert.equal(captured.options.headers.get("x-user-id"), null);
+});
+
+test("sender creation posts SMTP credentials over the authenticated API without echoing them", async () => {
+  let captured;
+  const input = { name: "Ethereal Test", email: "sender@ethereal.email", smtpHost: "smtp.ethereal.email", smtpPort: 587, smtpUser: "test-user", smtpPassword: "test-secret" };
+  const sender = await api.createSender(input, async (url, options) => {
+    captured = { url, options };
+    return new Response(JSON.stringify({ id: "sender-1", name: input.name, email: input.email, smtpHost: input.smtpHost, smtpPort: input.smtpPort, smtpUser: input.smtpUser }), { status: 201 });
+  });
+  assert.match(captured.url, /\/api\/senders$/);
+  assert.equal(captured.options.method, "POST");
+  assert.equal(captured.options.credentials, "include");
+  assert.equal(JSON.parse(captured.options.body).smtpPassword, "test-secret");
+  assert.equal("smtpPassword" in sender, false);
 });
 
 test("session API is centralized and backend errors are safely redacted", async () => {

@@ -13,6 +13,10 @@ function createComposeDraft() {
   return { name: "", subject: "", body: "", senderId: "", startAt: toLocalDateTime(new Date(Date.now() + 5 * 60_000)), delayMs: 5000, hourlyLimit: 100 };
 }
 
+function createSenderDraft() {
+  return { name: "", email: "", smtpHost: "smtp.ethereal.email", smtpPort: "587", smtpUser: "" };
+}
+
 const state = {
   page: location.hash.slice(1) || "dashboard",
   user: null,
@@ -22,6 +26,7 @@ const state = {
   loading: false, error: "", searchQuery: "", menuOpen: false,
   recipients: [], recipientInput: "", fileStats: null, fileError: "", scheduling: false,
   scheduleMessage: "", scheduleRequestId: null, selectedEmail: null,
+  senderDraft: createSenderDraft(), senderSaving: false, senderMessage: "",
   compose: createComposeDraft(),
 };
 
@@ -83,6 +88,7 @@ async function loadPageData() {
   }
   if (state.page === "integrations") tasks.push(api.slackStatus().then((data) => { state.slack = data; }));
   if (state.page === "compose") tasks.push(api.senders().then((data) => { state.senders = data; }));
+  if (state.page === "settings") tasks.push(api.senders().then((data) => { state.senders = data; }));
   if (state.page === "email-detail" && state.selectedEmail?.id) {
     tasks.push(api.email(state.selectedEmail.id).then((data) => { state.selectedEmail = data; }));
   }
@@ -263,6 +269,10 @@ root.addEventListener("change", async (event) => {
 
 root.addEventListener("input", (event) => {
   const input = event.target;
+  if (input.form?.dataset.form === "sender") {
+    if (input.name !== "smtpPassword") state.senderDraft[input.name] = input.value;
+    return;
+  }
   if (input.form?.dataset.form === "compose") {
     if (input.name === "recipientInput") state.recipientInput = input.value;
     else setComposeField(input.name, input.value);
@@ -292,6 +302,32 @@ root.addEventListener("submit", async (event) => {
     state.page = "search";
     history.replaceState(null, "", "#search");
     await loadPageData();
+    return;
+  }
+  if (form.dataset.form === "sender") {
+    const values = Object.fromEntries(["name", "email", "smtpHost", "smtpPort", "smtpUser"].map((key) => [key, String(data.get(key) ?? "").trim()]));
+    state.senderDraft = values;
+    state.senderMessage = "";
+    state.error = "";
+    state.senderSaving = true;
+    render();
+    try {
+      const sender = await api.createSender({
+        ...values,
+        email: values.email.toLowerCase(),
+        smtpPort: Number(values.smtpPort),
+        smtpPassword: String(data.get("smtpPassword") ?? ""),
+      });
+      state.senders = [...state.senders, sender];
+      state.senderDraft = createSenderDraft();
+      state.senderMessage = "Sender account saved. It is ready to select in Compose.";
+      state.error = "";
+    } catch (error) {
+      showError(error);
+    } finally {
+      state.senderSaving = false;
+      render();
+    }
     return;
   }
   if (form.dataset.form !== "compose") return;

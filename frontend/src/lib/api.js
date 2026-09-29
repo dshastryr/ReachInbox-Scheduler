@@ -54,6 +54,9 @@ export const api = {
   campaigns() { return apiRequest("/api/campaigns"); },
   emailStats() { return apiRequest("/api/emails/stats"); },
   senders() { return apiRequest("/api/senders"); },
+  createSender(input, fetcher = fetch) {
+    return apiRequest("/api/senders", { method: "POST", body: JSON.stringify(input) }, fetcher);
+  },
   scheduledEmails() { return apiRequest("/api/emails/scheduled"); },
   sentEmails(fetcher = fetch) { return apiRequest("/api/emails/sent", {}, fetcher); },
   email(id) { return apiRequest(`/api/emails/${encodeURIComponent(id)}`); },

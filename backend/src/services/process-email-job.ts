@@ -147,6 +147,9 @@ export async function processEmailJob(
       port: emailJob.sender.smtpPort,
       user: emailJob.sender.smtpUser,
       password: emailJob.sender.smtpPassword,
+      // Sender-specific SMTP security is inferred from the selected port;
+      // don't let a global SMTP_SECURE setting override each user's account.
+      secure: emailJob.sender.smtpPort === 465,
     };
     delivery = await send({
       smtp,
