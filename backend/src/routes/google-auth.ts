@@ -45,54 +45,61 @@ export function createGoogleAuthRouter(dependencies: GoogleAuthDependencies = de
     const frontendUrl = () => {
       try { return getGoogleFrontendUrl(); } catch { return "http://localhost:5173"; }
     };
-    const fail = () => {
+    const fail = (stage: string, error?: unknown) => {
+      // Keep OAuth diagnostics useful without logging codes, tokens, emails,
+      // cookies, or provider response bodies.
+      const errorName = error instanceof Error ? error.name : undefined;
+      console.warn(`[google-oauth] callback failed at ${stage}${errorName ? ` (${errorName})` : ""}`);
       const destination = new URL("/", frontendUrl());
       destination.searchParams.set("auth_error", "google");
       res.redirect(302, destination.toString());
     };
     const state = typeof req.query.state === "string" ? req.query.state : "";
     if (!state) {
-      fail();
+      fail("missing_state");
       return;
     }
     let validState = false;
     try { validState = await dependencies.consumeState(state); }
-    catch {
-      fail();
+    catch (error) {
+      fail("state_validation", error);
       return;
     }
     if (!validState) {
-      fail();
+      fail("invalid_or_expired_state");
       return;
     }
     if (typeof req.query.error === "string") {
-      fail();
+      fail("provider_declined");
       return;
     }
     const code = typeof req.query.code === "string" ? req.query.code : "";
     if (!code) {
-      fail();
+      fail("missing_code");
       return;
     }
 
+    let stage = "google_token_exchange";
     try {
       const accessToken = await dependencies.exchangeCode(code);
+      stage = "profile_lookup";
       const profile = await dependencies.profile(accessToken);
       if (!profile.email_verified) {
-        fail();
+        fail("unverified_email");
         return;
       }
       const email = profile.email.trim().toLowerCase();
       if (!email || !email.includes("@")) {
-        fail();
+        fail("invalid_profile_email");
         return;
       }
+      stage = "account_or_session_creation";
       const user = await findOrLinkUser(profile, email);
       const sessionId = await dependencies.createSession(user.id);
       setBrowserSessionCookie(res, sessionId);
       res.redirect(302, frontendUrl());
-    } catch {
-      fail();
+    } catch (error) {
+      fail(stage, error);
     }
   });
 
