@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
 import { createBrowserSession, setBrowserSessionCookie } from "../lib/auth-session";
 import {
@@ -29,6 +30,37 @@ const defaults: GoogleAuthDependencies = {
   createSession: createBrowserSession,
 };
 
+const SAFE_PRISMA_META_KEYS = new Set([
+  "modelName",
+  "field_name",
+  "column",
+  "constraint",
+  "table",
+  "relation_name",
+  "target",
+]);
+const SAFE_SCHEMA_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_.-]{0,79}$/;
+
+/** Keep only schema identifiers; drop values, SQL, and arbitrary provider/DB data. */
+function sanitizePrismaMeta(meta: unknown): Record<string, string | string[]> | undefined {
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return undefined;
+  const sanitized: Record<string, string | string[]> = {};
+  for (const [key, value] of Object.entries(meta)) {
+    if (!SAFE_PRISMA_META_KEYS.has(key)) continue;
+    if (typeof value === "string" && SAFE_SCHEMA_IDENTIFIER.test(value)) {
+      sanitized[key] = value;
+      continue;
+    }
+    if (Array.isArray(value)) {
+      const identifiers = value
+        .filter((item): item is string => typeof item === "string" && SAFE_SCHEMA_IDENTIFIER.test(item))
+        .slice(0, 10);
+      if (identifiers.length) sanitized[key] = identifiers;
+    }
+  }
+  return Object.keys(sanitized).length ? sanitized : undefined;
+}
+
 export function createGoogleAuthRouter(dependencies: GoogleAuthDependencies = defaults): Router {
   const router = Router();
 
@@ -49,7 +81,14 @@ export function createGoogleAuthRouter(dependencies: GoogleAuthDependencies = de
       // Keep OAuth diagnostics useful without logging codes, tokens, emails,
       // cookies, or provider response bodies.
       const errorName = error instanceof Error ? error.name : undefined;
-      console.warn(`[google-oauth] callback failed at ${stage}${errorName ? ` (${errorName})` : ""}`);
+      const prismaDetails = stage === "account_or_session_creation" &&
+        error instanceof Prisma.PrismaClientKnownRequestError
+        ? { prismaCode: error.code, prismaMeta: sanitizePrismaMeta(error.meta) }
+        : undefined;
+      console.warn(
+        `[google-oauth] callback failed at ${stage}${errorName ? ` (${errorName})` : ""}`,
+        ...(prismaDetails ? [prismaDetails] : []),
+      );
       const destination = new URL("/", frontendUrl());
       destination.searchParams.set("auth_error", "google");
       res.redirect(302, destination.toString());
