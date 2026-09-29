@@ -1,7 +1,14 @@
 const DEFAULT_API_BASE_URL = "https://reachinbox-scheduler-03lq.onrender.com";
+const LOCAL_API_BASE_URL = "http://localhost:5000";
 
 export function getApiBaseUrl() {
-  return DEFAULT_API_BASE_URL;
+  // This project ships plain browser modules (there is no Vite build step),
+  // so select the local API by origin and keep the submitted deployment URL
+  // pointed at the Render API.
+  return typeof window !== "undefined" &&
+    ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? LOCAL_API_BASE_URL
+    : DEFAULT_API_BASE_URL;
 }
 
 export class ApiError extends Error {

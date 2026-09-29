@@ -70,20 +70,24 @@ export async function getBrowserSessionTTL(sessionId: string): Promise<number> {
 }
 
 export function setBrowserSessionCookie(res: Response, sessionId: string): void {
+  const production = process.env.NODE_ENV === "production";
   res.cookie(SESSION_COOKIE_NAME, sessionId, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: production,
+    // The Vercel and Render hosts are different sites. Browser fetch requests
+    // need a SameSite=None cookie, which browsers require to also be Secure.
+    sameSite: production ? "none" : "lax",
     path: "/",
     maxAge: SESSION_TTL_SECONDS * 1000,
   });
 }
 
 export function clearBrowserSessionCookie(res: Response): void {
+  const production = process.env.NODE_ENV === "production";
   res.clearCookie(SESSION_COOKIE_NAME, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: production,
+    sameSite: production ? "none" : "lax",
     path: "/",
   });
 }

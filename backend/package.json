@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/server.js",
     "worker": "tsx src/workers/worker.ts",
+    "worker:prod": "node dist/workers/worker.js",
     "queue:test": "tsx src/scripts/schedule-test-job.ts",
     "email:test": "tsx src/scripts/create-test-email-job.ts",
     "campaign-scheduler:test": "tsx src/scripts/test-campaign-scheduler.ts",
